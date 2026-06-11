@@ -4,7 +4,7 @@ import tkinter.filedialog
 from tkinter import ttk
 from PIL import Image, ImageTk
 import subprocess
-import ctypes
+#import ctypes
 import os
 import json
 import threading
@@ -281,86 +281,144 @@ def start_process():
     return
 
 
-# ウィンドウを作成
 main = tkinter.Tk()
 main.title("動画分割")
-try:
-    # 画面サイズを取得（タスクバーを除く）
-    user32 = ctypes.windll.user32
-    # 画面の横幅
-    screen_width = user32.GetSystemMetrics(0)
-    # 画面の縦幅（タスクバー含む）
-    screen_height = user32.GetSystemMetrics(1)
-    # タスクバーの高さ
-    taskbar_height = user32.GetSystemMetrics(4)
-    # タスクバーを考慮したウィンドウサイズを設定
-    app_width = int(screen_width * 0.5)
-    app_height = int((screen_height - taskbar_height) * 0.5)
-    main.geometry(f"{app_width}x{app_height}")
-except:
-    app_width = 1200
-    app_height = 1000
-    main.geometry(str(1200) + "x" + str(1000))
-#ウィンドウサイズを絶対的に指定する場合はこれを使う
-#main.geometry(str(WIDTH) + "x" + str(HEIGHT))
-# ウィンドウサイズの変更を禁止
-main.resizable(False, False)
+screen_width = main.winfo_screenwidth()
+screen_height = main.winfo_screenheight()
+app_width = int(screen_width * 0.7)
+app_height = int(screen_height * 0.7)
+main.geometry(f"{app_width}x{app_height}")
+main.minsize(900, 650)
+main.resizable(True, True)
+FONT_NORMAL = ("Helvetica", 14)
+FONT_LARGE = ("Helvetica", 16)
+FONT_BOLD = ("Helvetica", 16, "bold")
+FONT_SMALL = ("Helvetica", 11)
+# 全体を左右2カラムにする
+main.columnconfigure(0, weight=1)
+main.columnconfigure(1, weight=2)
+main.rowconfigure(0, weight=1)
+left_frame = tkinter.Frame(main, padx=20, pady=20)
+left_frame.grid(row=0, column=0, sticky="nsew")
+right_frame = tkinter.Frame(main, padx=20, pady=20)
+right_frame.grid(row=0, column=1, sticky="nsew")
+# 左側フレームの列設定
+left_frame.columnconfigure(0, weight=1)
+left_frame.columnconfigure(1, weight=1)
+# 右側フレーム
+right_frame.rowconfigure(0, weight=1)
+right_frame.columnconfigure(0, weight=1)
+thumbnail_label = tkinter.Label(
+    right_frame,
+    text="ここにサムネイルが表示されます",
+    font=FONT_NORMAL,
+    bg="#A4A4A4"
+)
+thumbnail_label.grid(row=0, column=0, sticky="nsew")
 
-#画像を表示するエリア
-thumbnail_label = tkinter.Label(main, text="ここにサムネイルが表示されます", font=("游ゴシック",int(app_height *0.020)), bg="#A4A4A4")
-thumbnail_label.place(relx=0.5, rely=0.1, relwidth=0.45, relheight=0.8)
+# 手順1
+desc1 = tkinter.Label(
+    left_frame,
+    text="手順1\n分割したい動画ファイルを選択",
+    font=FONT_LARGE,
+    justify="left"
+)
 
-#説明1
-desc1 = tkinter.Label(main, text="手順1\n　分割したい動画ファイルを選択\n", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc1.place(relx=0.02, rely=0.01)
+desc1.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
 
-#動画読み込みボタン
-video_file_load_button = tkinter.Button(main, text="動画ファイルを選択", command=video_load, font=("游ゴシック",int(app_height *0.020)), bg="#eac9f1", fg="#000000")
-video_file_load_button.place(relx=0.05, rely=0.12, relwidth=0.2, relheight=0.08)
+video_file_load_button = tkinter.Button(
+    left_frame,
+    text="動画ファイルを選択",
+    command=video_load,
+    font=FONT_NORMAL,
+    bg="#eac9f1",
+    fg="#000000"
+)
 
-#読み込み完了表示
-video_file_input_complete_lavel = tkinter.Label(main, text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red", justify="left")
-video_file_input_complete_lavel.place(relx=0.27, rely=0.13)
+video_file_load_button.grid(row=1, column=0, sticky="ew", pady=(0, 20))
 
-#説明2
-desc2 = tkinter.Label(main, text="手順2\n　分割する間隔を入力", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc2.place(relx=0.02, rely=0.24)
+video_file_input_complete_lavel = tkinter.Label(
+    left_frame,
+    text="未選択",
+    font=FONT_BOLD,
+    fg="red",
+    justify="left"
+)
 
-#入力部分
-input_min = tkinter.Entry(main, font=("游ゴシック",int(app_height *0.025)), justify="right")
-input_min.place(relx=0.05, rely=0.38, relwidth=0.07, relheight=0.06)
+video_file_input_complete_lavel.grid(row=1, column=1, sticky="w", padx=(10, 0), pady=(0, 20))
+
+# 手順2
+desc2 = tkinter.Label(
+    left_frame,
+    text="手順2\n分割する間隔を入力",
+    font=FONT_LARGE,
+    justify="left"
+)
+
+desc2.grid(row=2, column=0, columnspan=2, sticky="w", pady=(0, 10))
+time_frame = tkinter.Frame(left_frame)
+time_frame.grid(row=3, column=0, columnspan=2, sticky="w", pady=(0, 20))
+input_min = tkinter.Entry(time_frame, font=FONT_NORMAL, justify="right", width=5)
+input_min.pack(side="left")
 input_min.insert(0, "3")
-input_sec = tkinter.Entry(main, font=("游ゴシック",int(app_height *0.025)), justify="right")
-input_sec.place(relx=0.16, rely=0.38, relwidth=0.07, relheight=0.06)
+desc_min = tkinter.Label(time_frame, text="分", font=FONT_NORMAL)
+desc_min.pack(side="left", padx=(5, 15))
+input_sec = tkinter.Entry(time_frame, font=FONT_NORMAL, justify="right", width=5)
+input_sec.pack(side="left")
 input_sec.insert(0, "0")
-#説明
-desc_min = tkinter.Label(main, text="分", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc_min.place(relx=0.13, rely=0.38)
-desc_sec = tkinter.Label(main, text="秒ずつに分割", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc_sec.place(relx=0.24, rely=0.38)
+desc_sec = tkinter.Label(time_frame, text="秒ずつに分割", font=FONT_NORMAL)
+desc_sec.pack(side="left", padx=(5, 0))
 
-#説明3
-desc3 = tkinter.Label(main, text="手順3\n　出力先ディレクトリの選択", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc3.place(relx=0.02, rely=0.48)
+# 手順3
+desc3 = tkinter.Label(
+    left_frame,
+    text="手順3\n出力先ディレクトリの選択",
+    font=FONT_LARGE,
+    justify="left"
+)
+desc3.grid(row=4, column=0, columnspan=2, sticky="w", pady=(0, 10))
+output_dir_select_button = tkinter.Button(
+    left_frame,
+    text="出力先ディレクトリを選択",
+    command=output_dir_select,
+    font=FONT_NORMAL,
+    bg="#c9eff1",
+    fg="#000000"
+)
+output_dir_select_button.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+output_dir_select_complete_lavel = tkinter.Label(
+    left_frame,
+    text="未選択",
+    font=FONT_BOLD,
+    fg="red",
+    justify="left"
+)
+output_dir_select_complete_lavel.grid(row=5, column=1, sticky="w", padx=(10, 0), pady=(0, 10))
+selected_dir_display = tkinter.Label(
+    left_frame,
+    text="ここに選択したディレクトリが表示されます。",
+    font=FONT_SMALL,
+    justify="left",
+    wraplength=350
+)
+selected_dir_display.grid(row=6, column=0, columnspan=2, sticky="w", pady=(0, 20))
 
-#出力ディレクトリ選択
-output_dir_select_button = tkinter.Button(main, text="出力先ディレクトリを選択", command=output_dir_select,  font=("游ゴシック",int(app_height *0.020)), bg="#c9eff1", fg="#000000")
-output_dir_select_button.place(relx=0.05, rely=0.59, relwidth=0.2, relheight=0.08)
+# 手順4
+desc4 = tkinter.Label(
+    left_frame,
+    text="手順4\n処理開始",
+    font=FONT_LARGE,
+    justify="left"
+)
+desc4.grid(row=7, column=0, columnspan=2, sticky="w", pady=(0, 10))
+start_button = tkinter.Button(
+    left_frame,
+    text="処理開始",
+    command=start_process,
+    font=FONT_NORMAL,
+    bg="#c9f1d1",
+    fg="#000000"
+)
+start_button.grid(row=8, column=0, sticky="ew")
 
-#ディレクトリ選択完了表示
-output_dir_select_complete_lavel = tkinter.Label(main, text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red", justify="left")
-output_dir_select_complete_lavel.place(relx=0.27, rely=0.605)
-
-selected_dir_display = tkinter.Label(main, text="ここに選択したディレクトリが表示されます。", font=("游ゴシック",int(app_height *0.015)), justify="left")
-selected_dir_display.place(relx=0.04, rely=0.7)
-
-#説明4
-desc4 = tkinter.Label(main, text="手順4\n　処理開始", font=("游ゴシック",int(app_height *0.025)), justify="left")
-desc4.place(relx=0.02, rely=0.76)
-
-#処理開始
-output_dir_select_button = tkinter.Button(main, text="処理開始", command=start_process,  font=("游ゴシック",int(app_height *0.020)), bg="#c9f1d1", fg="#000000")
-output_dir_select_button.place(relx=0.05, rely=0.87, relwidth=0.2, relheight=0.08)
-
-# イベントループ
 main.mainloop()
