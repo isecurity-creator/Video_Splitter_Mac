@@ -9,83 +9,101 @@ import os
 import json
 import threading
 import time
+import tempfile
 
 progress_list = [False, False]
 
 
+VALID_VIDEO_EXT = (".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv")
+
+def set_video_status(text, color):
+    video_file_input_complete_lavel.config(text=text, fg=color)
+
+def clear_thumbnail(message):
+    thumbnail_label.config(text=message, image="")
+    thumbnail_label.image = None
+
 def video_load():
-    global video_file_path, thumbnail_label, thumbnail_image, video_ext
-    # 動画ファイルを選択
-    video_file_path = tkinter.filedialog.askopenfilename(title="ファイル選択", initialdir= os.path.abspath(os.path.dirname(__file__)), filetypes=[("Video File", "*.mp4;*.mov;*.avi;*.mkv;*.wmv;*.flv")]    )
-    # ファイルが選択されなかった場合
+    global video_file_path, thumbnail_image, video_ext
+    video_file_path = tkinter.filedialog.askopenfilename(
+        title="ファイル選択",
+        initialdir=os.path.abspath(os.path.dirname(__file__)),
+        filetypes=[
+            ("Video File", "*.mp4 *.mov *.avi *.mkv *.wmv *.flv"),
+            ("All Files", "*.*"),
+        ],
+    )
     if not video_file_path:
         tkinter.messagebox.showwarning("エラー", "ファイルが選択されませんでした。")
-        thumbnail_label.config(text="ファイルが選択されていません", image="")
+        clear_thumbnail("ファイルが選択されていません")
         progress_list[0] = False
-        video_file_input_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+        set_video_status("未選択", "red")
         return
-    print(f"選択されたビデオのパス: {video_file_path}")
-    #表示を買える
-    video_file_input_complete_lavel.config(text="読込中...", font=("游ゴシック",int(app_height *0.025), "bold"), fg="orange")
-    # 拡張子チェック（動画ファイルかどうか）
-    valid_ext = (".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv")
-    #後で利用するため拡張子のみを取り出し
     _, ext = os.path.splitext(video_file_path)
     video_ext = ext.lower()
-    print(f"入力動画の拡張子:{video_ext}")
-    if not video_file_path.lower().endswith(valid_ext):
+    if video_ext not in VALID_VIDEO_EXT:
         tkinter.messagebox.showwarning("エラー", "動画ファイルを選択してください。")
-        thumbnail_label.config(text="エラー: 動画ファイルを選択してください。", image="")
+        clear_thumbnail("エラー: 動画ファイルを選択してください。")
         progress_list[0] = False
-        video_file_input_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+        set_video_status("未選択", "red")
         return
-    # 一時サムネイルパス
-    thumbnail_path = "thumbnail_temp.jpg"
+    set_video_status("読込中...", "orange")
+    main.update_idletasks()
     try:
-        # ffmpegを使って1秒地点のフレームをサムネイルとして抽出
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            thumbnail_path = tmp.name
         command = [
             "ffmpeg",
-            "-y",              # 既存ファイルを上書き
-            "-i", video_file_path,
+            "-y",
             "-ss", "00:00:01",
+            "-i", video_file_path,
             "-vframes", "1",
-            thumbnail_path
+            thumbnail_path,
         ]
-        # 実行結果をチェック
         result = subprocess.run(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8'
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
         )
-        # ffmpegがエラーを出した場合
         if result.returncode != 0 or not os.path.exists(thumbnail_path):
-            tkinter.messagebox.showerror("エラー","ffmpegによるサムネイル生成に失敗しました。")
+            tkinter.messagebox.showerror("エラー", "ffmpegによるサムネイル生成に失敗しました。")
             print(result.stderr)
-            thumbnail_label.config(text="エラー: サムネイル生成に失敗しました。", image="")
+            clear_thumbnail("エラー: サムネイル生成に失敗しました。")
             progress_list[0] = False
-            video_file_input_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+            set_video_status("未選択", "red")
             return
-        # サムネイル画像を表示
         image = Image.open(thumbnail_path)
-        image.thumbnail((int(app_width*0.45), int(app_height*0.8)))
+        # 現在のサムネイル表示領域のサイズを取得
+        thumbnail_label.update_idletasks()
+        label_width = thumbnail_label.winfo_width()
+        label_height = thumbnail_label.winfo_height()
+        # まだサイズが確定していない場合の保険
+        if label_width <= 1 or label_height <= 1:
+            label_width = 64
+            label_height = 360
+        image.thumbnail((label_width, label_height))
         thumbnail_image = ImageTk.PhotoImage(image)
         thumbnail_label.config(image=thumbnail_image, text="")
         thumbnail_label.image = thumbnail_image
-        #tkinter.messagebox.showinfo("読み込み成功", f"動画を読み込みました。\n選択されたファイルパス:\n{video_file_path}")
         progress_list[0] = True
-        video_file_input_complete_lavel.config(text="読込完了", font=("游ゴシック",int(app_height *0.025), "bold"), fg="green")
+        set_video_status("読込完了", "green")
     except FileNotFoundError:
-        # ffmpegがインストールされていない場合
         tkinter.messagebox.showerror("エラー", "ffmpegが見つかりません。")
-        thumbnail_label.config(text="エラー: ffmpegがインストールされていません。", image="")
+        clear_thumbnail("エラー: ffmpegがインストールされていません。")
         progress_list[0] = False
-        video_file_input_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+        set_video_status("未選択", "red")
     except Exception as e:
-        tkinter.messagebox.showerror("予期せぬエラー" ,f"不明なエラーが発生しました: {e}\n開発者にこのエラーを伝えてください。")
-        thumbnail_label.config(text=f"エラー: {e}", image="")
+        tkinter.messagebox.showerror(
+            "予期せぬエラー",
+            f"不明なエラーが発生しました: {e}\n開発者にこのエラーを伝えてください。",
+        )
+        clear_thumbnail(f"エラー: {e}")
         progress_list[0] = False
-        video_file_input_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+        set_video_status("未選択", "red")
     finally:
-        # 一時ファイルの削除（存在する場合のみ）
-        if os.path.exists(thumbnail_path):
+        if "thumbnail_path" in locals() and os.path.exists(thumbnail_path):
             try:
                 os.remove(thumbnail_path)
             except Exception:
