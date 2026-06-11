@@ -140,12 +140,12 @@ def output_dir_select():
     output_dir_path = tkinter.filedialog.askdirectory(initialdir=os.path.abspath(os.path.dirname(__file__)))
     if not output_dir_path:
         progress_list[1] = False
-        output_dir_select_complete_lavel.config(text="未選択", font=("游ゴシック",int(app_height *0.025), "bold"), fg="red")
+        output_dir_select_complete_lavel.config(text="未選択", fg="red")
         selected_dir_display.config(text="ここに選択したディレクトリが表示されます。")
     else:
         #tkinter.messagebox.showinfo("選択成功", f"出力先ディレクトリを選択しました。\n選択されたディレクトリパス:\n{output_dir_path}")
         progress_list[1] = True
-        output_dir_select_complete_lavel.config(text="選択済", font=("游ゴシック",int(app_height *0.025), "bold"), fg="green")
+        output_dir_select_complete_lavel.config(text="選択済", fg="green")
         selected_dir_display.config(text=output_dir_path)
         return
 
@@ -215,8 +215,8 @@ def start_process():
     global process_window
     process_window = tkinter.Toplevel(main)
     process_window.title("処理中")
-    prw_app_width = int(screen_width * 0.2)
-    prw_app_height = int((screen_height - taskbar_height) * 0.2)
+    prw_app_width = int(screen_width * 0.3)
+    prw_app_height = int(screen_height * 0.3)
     process_window.geometry(f"{prw_app_width}x{prw_app_height}")
     #サブウィンドウの大きさの変更を禁止
     process_window.resizable(False, False)
@@ -225,18 +225,18 @@ def start_process():
     #バツボタンで閉じることを禁止
     process_window.protocol('WM_DELETE_WINDOW', lambda: None)
     #説明を追記
-    under_process_info = tkinter.Label(process_window, text="処理中です\nしばらくお待ちください", font=("游ゴシック",int(prw_app_width *0.04), "bold"), justify="center")
+    under_process_info = tkinter.Label(process_window, text="処理中です\nしばらくお待ちください", font=FONT_BOLD, justify="center")
     under_process_info.place(relx=0, rely=0.04, relwidth=1)
     #プログレスバー
     progress_percentage = tkinter.IntVar()
     progress_bar = ttk.Progressbar(process_window, maximum=100, orient="horizontal", mode="determinate", variable=progress_percentage)
     progress_bar.place(relx=0.1, rely=0.35, relwidth=0.8, relheight=0.18)
     #進捗文字表記
-    progress_text = tkinter.Label(process_window, text=f"\nただいま0個中0個目を処理中(0%)", font=("游ゴシック",int(prw_app_width *0.033)), justify="center")
+    progress_text = tkinter.Label(process_window, text=f"\nただいま0個中0個目を処理中(0%)", font=FONT_NORMAL, justify="center")
     progress_text.place(relx=0, rely=0.6, relwidth=1)
     #キャンセルボタン
     global stop_button
-    stop_button = tkinter.Button(process_window, text="キャンセル", command=cancel_flag_lettrue,  font=("游ゴシック",int(app_height *0.020)))
+    stop_button = tkinter.Button(process_window, text="キャンセル", command=cancel_flag_lettrue, font=FONT_NORMAL)
     stop_button.place(relx=0.3, rely=0.85, relwidth=0.4, relheight=0.1)
     #process_window.mainloop()
     #↑だとここで実行が止まる
